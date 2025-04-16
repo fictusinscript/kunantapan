@@ -1,0 +1,133 @@
+/* globals.css — Next.js / shadcn / Tailwind v4  */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* class‑based dark‑mode, same behaviour as Tailwind v3 */
+@custom-variant dark (&:is(.dark *));
+
+/* expose the tokens to Tailwind’s design‑token system */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* semantic radius helpers identical to shadcn defaults */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ----------  light theme (root) ---------- */
+:root {
+  --radius: 1rem;
+
+  --background:           oklch(0.986 0.001 128.476);
+  --foreground:           oklch(0.222 0.010 128.995);
+
+  --card:                 oklch(0.993 0.001 128.467);
+  --card-foreground:      oklch(0.222 0.010 128.995);
+
+  --popover:              oklch(0.993 0.001 128.467);
+  --popover-foreground:   oklch(0.222 0.010 128.995);
+
+  --primary:              oklch(0.577 0.065 144.676);
+  --primary-foreground:   oklch(0.986 0.003 145.556);
+
+  --secondary:            oklch(0.858 0.014 106.688);
+  --secondary-foreground: oklch(0.225 0.010 107.147);
+
+  --muted:                oklch(0.928 0.007 128.549);
+  --muted-foreground:     oklch(0.531 0.033 129.185);
+
+  --accent:               oklch(0.587 0.039 196.146);
+  --accent-foreground:    oklch(0.986 0.002 197.130);
+
+  --destructive:          oklch(0.559 0.190  25.863);
+  --destructive-foreground: oklch(0.980 0.007  17.269);
+
+  --border:               oklch(0.891 0.011 128.600);
+  --input:                oklch(0.891 0.011 128.600);
+  --ring:                 oklch(0.577 0.065 144.676);
+
+  --chart-1:              oklch(0.577 0.065 144.676);
+  --chart-2:              oklch(0.858 0.014 106.688);
+  --chart-3:              oklch(0.587 0.039 196.146);
+  --chart-4:              oklch(0.641 0.074  69.910);
+  --chart-5:              oklch(0.686 0.057 248.241);
+}
+
+/* ----------  dark theme ---------- */
+.dark {
+  --background:           oklch(0.225 0.016 129.257);
+  --foreground:           oklch(0.985 0.000   0.000);
+
+  --card:                 oklch(0.247 0.018 129.302);
+  --card-foreground:      oklch(0.985 0.000   0.000);
+
+  --popover:              oklch(0.247 0.018 129.302);
+  --popover-foreground:   oklch(0.985 0.000   0.000);
+
+  --primary:              oklch(0.662 0.063 144.821);
+  --primary-foreground:   oklch(0.392 0.034 152.498);
+
+  --secondary:            oklch(0.442 0.024 107.349);
+  --secondary-foreground: oklch(0.985 0.000   0.000);
+
+  --muted:                oklch(0.442 0.024 107.349);
+  --muted-foreground:     oklch(0.779 0.023 128.792);
+
+  --accent:               oklch(0.672 0.038 196.284);
+  --accent-foreground:    oklch(0.225 0.011 196.382);
+
+  --destructive:          oklch(0.476 0.159  25.636);
+  --destructive-foreground: oklch(0.985 0.000   0.000);
+
+  --border:               oklch(0.392 0.034 129.467);
+  --input:                oklch(0.392 0.034 129.467);
+  --ring:                 oklch(0.662 0.063 144.821);
+
+  --chart-1:              oklch(0.662 0.063 144.821);
+  --chart-2:              oklch(0.442 0.024 107.349);
+  --chart-3:              oklch(0.672 0.038 196.284);
+  --chart-4:              oklch(0.692 0.028  67.329);
+  --chart-5:              oklch(0.482 0.033 285.113);
+
+  --radius: 1rem;
+}
+
+/* Basic element defaults, unchanged from shadcn‑v3 */
+@layer base {
+  *   {@apply border-border outline-ring/50;}
+  body {@apply bg-background text-foreground;}
+}
