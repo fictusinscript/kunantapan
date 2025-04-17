@@ -5,14 +5,25 @@ import ClientStudy from "@/components/study-client"
 
 type Study = (typeof studies)[number]
 
-export default function StudyPage({
-  params: { id },
+export default async function StudyPage({
+  // `params` is now asynchronous in Next .js 15+
+  params,
 }: {
-  params: { id: string }
+  // Typing it as a Promise makes it harder to forget `await`
+  params: Promise<{ id: string }>
 }) {
-  const study: Study | undefined = (studies as Study[]).find((s) => s.id === id)
-  if (!study) notFound()
+  // Await the params object before de‑structuring
+  const { id } = await params
 
-  // Render the client component for interactivity
+  // Find the study that matches the param
+  const study: Study | undefined = (studies as Study[]).find(
+    (s) => s.id === id,
+  )
+
+  if (!study) {
+    notFound()
+  }
+
+  // Render the interactive client component
   return <ClientStudy study={study} />
 }
