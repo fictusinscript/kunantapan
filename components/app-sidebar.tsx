@@ -132,21 +132,21 @@ const data = {
     },
   ],
   documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
+    // {
+    //   name: "Data Library",
+    //   url: "#",
+    //   icon: IconDatabase,
+    // },
+    // {
+    //   name: "Reports",
+    //   url: "#",
+    //   icon: IconReport,
+    // },
+    // {
+    //   name: "Word Assistant",
+    //   url: "#",
+    //   icon: IconFileWord,
+    // },
   ],
 }
 
