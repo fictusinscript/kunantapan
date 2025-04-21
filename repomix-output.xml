@@ -44,6 +44,8 @@ The content is organized as follows:
 
 <directory_structure>
 app/
+  create/
+    page.tsx
   dashboard/
     data.json
   study/
@@ -115,6 +117,18 @@ tsconfig.json
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="app/create/page.tsx">
+import UploadComponent from "@/ui/create/upload"
+
+export default function Page() {
+    return (
+        <div className="flex h-full w-full items-center justify-center pt-20">
+            <UploadComponent />
+        </div>
+    )
+}
+</file>
 
 <file path="app/upload/page.tsx">
 import UploadComponent from "@/ui/create/upload"
@@ -3282,53 +3296,6 @@ export function ChartAreaInteractive() {
 }
 </file>
 
-<file path="components/nav-secondary.tsx">
-"use client"
-
-import * as React from "react"
-import { type Icon } from "@tabler/icons-react"
-import Link from "next/link"
-
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
-
-export function NavSecondary({
-  items,
-  ...props
-}: {
-  items: {
-    title: string
-    url: string
-    icon: Icon
-  }[]
-} & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
-  return (
-    <SidebarGroup {...props}>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              {/* ----------  use Link for client‑side navigation  ---------- */}
-              <SidebarMenuButton asChild>
-                <Link href={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  )
-}
-</file>
-
 <file path="components/nav-user.tsx">
 "use client"
 
@@ -3961,38 +3928,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ]
 </file>
 
-<file path="app/study/[id]/page.tsx">
-// app/study/[id]/page.tsx
-import { notFound } from "next/navigation"
-import studies from "@/app/dashboard/data.json"
-import ClientStudy from "@/components/study-client"
-
-type Study = (typeof studies)[number]
-
-export default async function StudyPage({
-  // `params` is now asynchronous in Next .js 15+
-  params,
-}: {
-  // Typing it as a Promise makes it harder to forget `await`
-  params: Promise<{ id: string }>
-}) {
-  // Await the params object before de‑structuring
-  const { id } = await params
-
-  // Find the study that matches the param
-  const study: Study | undefined = (studies as Study[]).find(
-    (s) => s.id === id,
-  )
-
-  if (!study) {
-    notFound()
-  }
-
-  // Render the interactive client component
-  return <ClientStudy study={study} />
-}
-</file>
-
 <file path="app/page.tsx">
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
@@ -4481,104 +4416,48 @@ export function DataTable({
 }
 </file>
 
-<file path="components/nav-documents.tsx">
+<file path="components/nav-secondary.tsx">
 "use client"
 
-import {
-  IconDots,
-  IconFolder,
-  IconShare3,
-  IconTrash,
-  type Icon,
-} from "@tabler/icons-react"
+import * as React from "react"
+import { type Icon } from "@tabler/icons-react"
 import Link from "next/link"
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   SidebarGroup,
-  SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 
-export function NavDocuments({
+export function NavSecondary({
   items,
+  ...props
 }: {
   items: {
-    name: string
+    title: string
     url: string
     icon: Icon
   }[]
-}) {
-  const { isMobile } = useSidebar()
-
+} & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Recent</SidebarGroupLabel>
-
-      <SidebarMenu>
-        {items.map((item) => (
-          <SidebarMenuItem key={item.name}>
-            {/* ----------  use Link for client‑side navigation  ---------- */}
-            <SidebarMenuButton asChild>
-              <Link href={item.url}>
-                <item.icon />
-                <span>{item.name}</span>
-              </Link>
-            </SidebarMenuButton>
-
-            {/* “More” context‑menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuAction
-                  showOnHover
-                  className="data-[state=open]:bg-accent rounded-sm"
-                >
-                  <IconDots />
-                  <span className="sr-only">More</span>
-                </SidebarMenuAction>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent
-                className="w-24 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align={isMobile ? "end" : "start"}
-              >
-                <DropdownMenuItem>
-                  <IconFolder />
-                  <span>Open</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <IconShare3 />
-                  <span>Share</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">
-                  <IconTrash />
-                  <span>Delete</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        ))}
-
-        {/* “More” placeholder item */}
-        <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70">
-            <IconDots className="text-sidebar-foreground/70" />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
+    <SidebarGroup {...props}>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              {/* ----------  use Link for client‑side navigation  ---------- */}
+              <SidebarMenuButton asChild>
+                <Link href={item.url}>
+                  <item.icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
     </SidebarGroup>
   )
 }
@@ -4613,6 +4492,154 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
+  )
+}
+</file>
+
+<file path="app/study/[id]/page.tsx">
+// app/study/[id]/page.tsx
+import { notFound } from "next/navigation"
+import studies from "@/app/dashboard/data.json"
+import ClientStudy from "@/components/study-client"
+
+type Study = (typeof studies)[number]
+
+export default async function StudyPage({
+  // `params` is now asynchronous in Next .js 15+
+  params,
+}: {
+  // Typing it as a Promise makes it harder to forget `await`
+  params: Promise<{ id: string }>
+}) {
+  // Await the params object before de‑structuring
+  const { id } = await params
+
+  // Find the study that matches the param
+  const study: Study | undefined = (studies as Study[]).find(
+    (s) => s.id === id,
+  )
+
+  if (!study) {
+    notFound()
+  }
+
+  // Render the interactive client component
+  return <ClientStudy study={study} />
+}
+</file>
+
+<file path="components/nav-documents.tsx">
+"use client"
+
+import {
+  IconDots,
+  IconFolder,
+  IconShare3,
+  IconTrash,
+  type Icon,
+} from "@tabler/icons-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar"
+
+/**
+ * Recent documents / studies list shown in the sidebar.
+ *
+ * When the current route matches an item’s `url` we pass
+ * `isActive={true}` to <SidebarMenuButton /> so the UI
+ * highlights the item (same treatment as the main nav).
+ */
+export function NavDocuments({
+  items,
+}: {
+  items: {
+    name: string
+    url: string
+    icon: Icon
+  }[]
+}) {
+  const { isMobile } = useSidebar()
+  const pathname = usePathname()
+
+  return (
+    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+      <SidebarGroupLabel>Recent</SidebarGroupLabel>
+
+      <SidebarMenu>
+        {items.map((item) => {
+          const isActive = pathname === item.url
+
+          return (
+            <SidebarMenuItem key={item.name}>
+              {/* ----------  client‑side navigation ---------- */}
+              <SidebarMenuButton asChild isActive={isActive}>
+                <Link href={item.url}>
+                  <item.icon />
+                  <span>{item.name}</span>
+                </Link>
+              </SidebarMenuButton>
+
+              {/* context menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuAction
+                    showOnHover
+                    className="data-[state=open]:bg-accent rounded-sm"
+                  >
+                    <IconDots />
+                    <span className="sr-only">More</span>
+                  </SidebarMenuAction>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  className="w-24 rounded-lg"
+                  side={isMobile ? "bottom" : "right"}
+                  align={isMobile ? "end" : "start"}
+                >
+                  <DropdownMenuItem>
+                    <IconFolder />
+                    <span>Open</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <IconShare3 />
+                    <span>Share</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive">
+                    <IconTrash />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          )
+        })}
+
+        {/* placeholder “More” item */}
+        <SidebarMenuItem>
+          <SidebarMenuButton className="text-sidebar-foreground/70">
+            <IconDots className="text-sidebar-foreground/70" />
+            <span>More</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarGroup>
   )
 }
 </file>
