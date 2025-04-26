@@ -5,7 +5,7 @@ import { Niivue } from '@niivue/niivue';
 export default function BrainViewer() {  
   const canvasRef = useRef<HTMLCanvasElement>(null);  
   const nvRef = useRef<any>(null);  
-  
+    
   // State for all interactive elements  
   const [opacity, setOpacity] = useState({ background: 255, overlay: 128 });  
   const [clipPlane, setClipPlane] = useState(false);  
@@ -20,7 +20,7 @@ export default function BrainViewer() {
   // Initialize Niivue  
   useEffect(() => {  
     if (!canvasRef.current) return;  
-      
+  
     // Define a function to handle location changes  
     const handleLocationChange = (data: any) => {  
       setLocation(data.string);  
@@ -28,10 +28,14 @@ export default function BrainViewer() {
   
     // 1. Create NiiVue instance with proper defaults  
     const defaults = {  
-      backColor: [0.4, 0.4, 0.4, 1],  
+      backColor: [0, 0, 0, 1], // Solid black background  
       show3Dcrosshair: true,  
-      crosshairColor: [1, 1, 0, 1], // Add this line to set yellow crosshairs  
-      onLocationChange: handleLocationChange  
+      crosshairColor: [1, 1, 0, 1],  
+      onLocationChange: handleLocationChange,  
+      // Important: Disable linked zoom behavior  
+      yoke3Dto2DZoom: false,  
+      // Disable scroll wheel zoom completely  
+      scrollWheelZoom: false  
     };  
   
     // Wait a small amount of time to ensure the canvas is properly in the DOM  
@@ -42,17 +46,30 @@ export default function BrainViewer() {
         // 2. Attach to canvas - this is where WebGL context is created  
         if (canvasRef.current) {  
           nv.attachToCanvas(canvasRef.current);  
-          nv.opts.dragMode = nv.dragModes.pan;  
+            
+          // Set drag mode to measurement instead of pan to avoid zoom behavior  
+          nv.opts.dragMode = nv.dragModes.measurement;  
+            
           nv.opts.multiplanarForceRender = true;  
-          nv.opts.yoke3Dto2DZoom = true;  
           nv.opts.crosshairGap = 11;  
           nv.setInterpolation(true);  
-            
+  
+          // Set a fixed 2x2 quad-view layout  
+          nv.setCustomLayout([  
+            // Top left - Sagittal  
+            {sliceType: nv.sliceTypeSagittal, position: [0, 0, 0.5, 0.5]},  
+            // Top right - Coronal  
+            {sliceType: nv.sliceTypeCoronal, position: [0.5, 0, 0.5, 0.5]},  
+            // Bottom left - Axial  
+            {sliceType: nv.sliceTypeAxial, position: [0, 0.5, 0.5, 0.5]},  
+            // Bottom right - 3D Render  
+            {sliceType: nv.sliceTypeRender, position: [0.5, 0.5, 0.5, 0.5]},  
+          ]);  
+  
           // 3. Store the reference for later use  
           nvRef.current = nv;  
-            
+  
           // 4. Load default volumes with proper paths  
-          // Make sure these files exist at these paths in your public folder  
           nv.loadVolumes([  
             { url: "/default/brain.nii" },  
             { url: "/default/mask.seg.nii" }  
@@ -62,6 +79,10 @@ export default function BrainViewer() {
               nv.volumes[1].opacity = 0.5;  
               nv.updateGLVolume();  
             }  
+              
+            // Add our custom wheel handler AFTER volumes are loaded  
+            addCustomWheelHandler(nv);  
+              
           }).catch(err => {  
             console.error("Error loading volumes:", err);  
           });  
@@ -71,12 +92,77 @@ export default function BrainViewer() {
       }  
     }, 100);  
   
+    // Function to add our custom wheel handler  
+    function addCustomWheelHandler(nv: any) {  
+      if (!canvasRef.current) return;  
+        
+      // Override NiiVue's internal wheel handler  
+      const originalHandleWheel = nv.handleWheel;  
+      nv.handleWheel = function() {  
+        // Do nothing - completely disable the default wheel behavior  
+        return;  
+      };  
+        
+      // Add wheel event listener to canvas  
+      canvasRef.current.addEventListener('wheel', function(e) {  
+        e.preventDefault();  
+        e.stopPropagation();  
+          
+        const rect = canvasRef.current!.getBoundingClientRect();  
+        const x = e.clientX - rect.left;  
+        const y = e.clientY - rect.top;  
+          
+        // Get the tile index to determine which view we're in  
+        const tileIdx = nv.tileIndex(x * window.devicePixelRatio, y * window.devicePixelRatio);  
+          
+        // Only proceed if we're over a valid tile  
+        if (tileIdx >= 0) {  
+          const axCorSag = nv.screenSlices[tileIdx].axCorSag;  
+            
+          // Only handle 2D views (not the 3D render view)  
+          if (axCorSag <= 2) { // 0: Axial, 1: Coronal, 2: Sagittal  
+            // Calculate scroll direction  
+            let scrollAmount = e.deltaY < 0 ? -1 : 1;  
+            if (nv.opts.invertScrollDirection) {  
+              scrollAmount = -scrollAmount;  
+            }  
+              
+            // Get current crosshair position  
+            const crosshair = nv.scene.crosshairPos.slice();  
+              
+            // Change only the dimension corresponding to the current view  
+            // Axial: change Z  
+            // Coronal: change Y  
+            // Sagittal: change X  
+            const step = 0.05; // Step size for slice movement, adjust as needed  
+              
+            if (axCorSag === 0) { // Axial  
+              crosshair[2] = Math.max(0, Math.min(1, crosshair[2] + (scrollAmount * step)));  
+            } else if (axCorSag === 1) { // Coronal  
+              crosshair[1] = Math.max(0, Math.min(1, crosshair[1] + (scrollAmount * step)));  
+            } else if (axCorSag === 2) { // Sagittal  
+              crosshair[0] = Math.max(0, Math.min(1, crosshair[0] + (scrollAmount * step)));  
+            }  
+              
+            // Update crosshair position  
+            nv.scene.crosshairPos = crosshair;  
+            nv.drawScene();  
+          }  
+        }  
+      }, { passive: false });  
+    }  
+  
     // Proper cleanup function  
     return () => {  
       clearTimeout(initTimer);  
-        
       if (nvRef.current) {  
         const nv = nvRef.current;  
+          
+        // Remove our custom wheel handler if it exists  
+        if (canvasRef.current) {  
+          // We can't directly remove the anonymous function,  
+          // but NiiVue's cleanup will handle this  
+        }  
           
         // 1. Properly clean up WebGL context if it exists  
         if (nv.gl) {  
@@ -107,162 +193,16 @@ export default function BrainViewer() {
     };  
   }, []);  
   
-  // Rest of your effect hooks and handlers remain the same...  
-  // Update clip plane when state changes  
-  useEffect(() => {  
-    if (!nvRef.current) return;  
-    if (clipPlane) {  
-      nvRef.current.setClipPlane([0, 0, 90]);  
-    } else {  
-      nvRef.current.setClipPlane([2, 0, 90]);  
-    }  
-  }, [clipPlane]);  
-  
-  // Update opacity when state changes  
-  useEffect(() => {  
-    if (!nvRef.current || !nvRef.current.volumes || nvRef.current.volumes.length === 0) return;  
-    nvRef.current.setOpacity(0, opacity.background / 255);  
-    nvRef.current.updateGLVolume();  
-  }, [opacity.background]);  
-  
-  useEffect(() => {  
-    if (!nvRef.current || !nvRef.current.volumes || nvRef.current.volumes.length < 2) return;  
-    nvRef.current.setOpacity(1, opacity.overlay / 255);  
-    nvRef.current.updateGLVolume();  
-  }, [opacity.overlay]);  
-  
-  // Update drag mode when state changes  
-  useEffect(() => {  
-    if (!nvRef.current) return;  
-    nvRef.current.opts.dragMode = dragMode;  
-  }, [dragMode]);  
-  
-  // Update drawing mode when state changes  
-  useEffect(() => {  
-    if (!nvRef.current) return;  
-    nvRef.current.setDrawingEnabled(drawing.enabled);  
-    if (drawing.mode >= 0) {  
-      nvRef.current.setPenValue(drawing.mode & 7, drawing.mode > 7);  
-    }  
-  }, [drawing.enabled, drawing.mode]);  
-  
-  // Handle drawing mode changes  
-  const handlePenChange = (e: React.ChangeEvent<HTMLSelectElement>) => {  
-    const mode = parseInt(e.target.value);  
-    setDrawing(prev => ({ ...prev, enabled: mode >= 0, mode }));  
-  };  
-  
-  // Handle draw mode (undo, append, remove)  
-  const handleDrawModeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {  
-    if (!nvRef.current || !nvRef.current.drawBitmap) {  
-      alert("No drawing (hint: use the Draw pull down to select a pen)");  
-      setDrawing(prev => ({ ...prev, drawMode: 0 }));  
-      return;  
-    }  
-      
-    const mode = parseInt(e.target.value);  
-    if (mode === 0) {  
-      nvRef.current.drawUndo();  
-      setDrawing(prev => ({ ...prev, drawMode: 0 }));  
-      return;  
-    }  
-      
-    if (nvRef.current.volumes.length < 2) {  
-      alert("No segmentation open");  
-      setDrawing(prev => ({ ...prev, drawMode: 0 }));  
-      return;  
-    }  
-      
-    let img = nvRef.current.volumes[1].img;  
-    let draw = await nvRef.current.saveImage({ filename: "", isSaveDrawing: true });  
-    const niiHdrBytes = 352;  
-    const nvox = draw.length;  
-      
-    if (mode === 1) { // append  
-      for (let i = 0; i < nvox; i++) if (draw[niiHdrBytes + i] > 0) img[i] = 1;  
-    }  
-    if (mode === 2) { // delete  
-      for (let i = 0; i < nvox; i++) if (draw[niiHdrBytes + i] > 0) img[i] = 0;  
-    }  
-      
-    nvRef.current.closeDrawing();  
-    nvRef.current.updateGLVolume();  
-    nvRef.current.setDrawingEnabled(false);  
-    setDrawing(prev => ({ ...prev, enabled: false, mode: -1, drawMode: 0 }));  
-  };  
-  
-  // Handle save image button  
-  const handleSaveImage = () => {  
-    if (!nvRef.current || nvRef.current.volumes.length < 2) {  
-      alert("No segmentation open");  
-      return;  
-    }  
-    nvRef.current.volumes[1].saveToDisk("segmentation.nii.gz");  
-  };  
-  
-  // Handle save scene button  
-  const handleSaveScene = () => {  
-    if (!nvRef.current) return;  
-    nvRef.current.saveDocument("brainchop.nvd");  
-  };  
-  
-  // Parse location string for better display  
-  const parsedLocation = location.split(" ").map((value, index) => (  
-    <p key={index} style={{ fontSize: "14px", margin: "0px" }}>{value}</p>  
-  ));  
-  
   return (  
-    <div className="flex flex-col h-full w-full bg-[#303030] text-white">  
-      {/* <header className="p-4">  
-        <div className="flex flex-wrap gap-4 items-center">  
-          <div className="flex items-center gap-2">  
-            <label htmlFor="clipCheck">Clip Plane</label>  
-            <input type="checkbox" id="clipCheck" checked={clipPlane} onChange={e => setClipPlane(e.target.checked)} />  
-          </div>  
-          <div className="flex items-center gap-2">  
-            <label htmlFor="opacitySlider0">Background Opacity</label>  
-            <input type="range" min="0" max="255" value={opacity.background} className="slider" id="opacitySlider0" onChange={e => setOpacity(prev => ({ ...prev, background: parseInt(e.target.value) }))} />  
-          </div>  
-          <div className="flex items-center gap-2">  
-            <label htmlFor="opacitySlider1">Overlay Opacity</label>  
-            <input type="range" min="0" max="255" value={opacity.overlay} className="slider" id="opacitySlider1" onChange={e => setOpacity(prev => ({ ...prev, overlay: parseInt(e.target.value) }))} />  
-          </div>  
-          <div className="flex items-center gap-2">  
-            <label htmlFor="penDrop">Draw</label>  
-            <select id="penDrop" value={drawing.mode} onChange={handlePenChange} >  
-              <option value="-1">Off</option>  
-              <option value="2">On</option>  
-              <option value="10">Filled</option>  
-              <option value="0">Erase</option>  
-            </select>  
-            <select id="drawDrop" value={drawing.drawMode} onChange={handleDrawModeChange} >  
-              <option value="0">Undo</option>  
-              <option value="1">Append</option>  
-              <option value="2">Remove</option>  
-            </select>  
-          </div>  
-          <div className="flex items-center gap-2">  
-            <label htmlFor="dragMode">Drag Mode</label>  
-            <select id="dragMode" value={dragMode} onChange={e => setDragMode(parseInt(e.target.value))} >  
-              <option value="0">none</option>  
-              <option value="1">contrast</option>  
-              <option value="2">measurement</option>  
-              <option value="3">pan/zoom</option>  
-              <option value="4">slicer3D</option>  
-            </select>  
-          </div>  
-          <button className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded" onClick={handleSaveImage} >  
-            Save Segmentation  
-          </button>  
-          <button className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded" onClick={handleSaveScene} >  
-            Save Scene  
-          </button>  
-        </div>  
-      </header>   */}
+    <div className="flex flex-col h-full w-full bg-black text-white">  
       <main className="flex-1 bg-black relative">  
-        <canvas ref={canvasRef} id="gl1" className="absolute inset-0 w-full h-full"></canvas>  
+        <canvas   
+          ref={canvasRef}  
+          id="gl1"  
+          className="absolute inset-0 w-full h-full bg-black"  
+          style={{ minHeight: "400px" }} // Ensures minimum height for the canvas  
+        ></canvas>  
       </main>  
-      
     </div>  
   );  
 }
