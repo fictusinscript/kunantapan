@@ -37,9 +37,9 @@ canvas {
 canvas:focus {
   outline: 0px;
 }
-div {
-  display: table-row;
-  background-color: blue;
+.table-row {  
+  display: table-row;  
+  background-color: blue;  
 }
 .dropdown {
   float: left;
