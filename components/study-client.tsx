@@ -32,7 +32,7 @@ export default function ClientStudy({ study }: { study: Study }) {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Study info header */}
+      {/* Study info header
       <div className="p-4 bg-background border-b">
         <h1 className="text-2xl font-semibold">Study {study.id}</h1>
         <div className="flex gap-6 mt-2">
@@ -43,7 +43,7 @@ export default function ClientStudy({ study }: { study: Study }) {
             <strong>Scan&nbsp;date:</strong> {study.scanDate}
           </p>
         </div>
-      </div>
+      </div> */}
       
       {/* Brain viewer component takes the rest of the screen */}
       <div className="flex-1">

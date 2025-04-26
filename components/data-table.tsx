@@ -1,5 +1,5 @@
 "use client"
-
+import { DragHandle } from "@/components/drag-handle"
 import * as React from "react"
 import {
   DndContext,
@@ -91,21 +91,21 @@ export const schema = z.object({
 
 /* ----------  helpers ---------- */
 
-function DragHandle({ id }: { id: string }) {
-  const { attributes, listeners } = useSortable({ id })
-  return (
-    <Button
-      {...attributes}
-      {...listeners}
-      variant="ghost"
-      size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
-    >
-      <IconGripVertical className="size-3" />
-      <span className="sr-only">Drag to reorder</span>
-    </Button>
-  )
-}
+// function DragHandle({ id }: { id: string }) {
+//   const { attributes, listeners } = useSortable({ id })
+//   return (
+//     <Button
+//       {...attributes}
+//       {...listeners}
+//       variant="ghost"
+//       size="icon"
+//       className="text-muted-foreground size-7 hover:bg-transparent"
+//     >
+//       <IconGripVertical className="size-3" />
+//       <span className="sr-only">Drag to reorder</span>
+//     </Button>
+//   )
+// }
 
 /* ----------  column definitions ---------- */
 
