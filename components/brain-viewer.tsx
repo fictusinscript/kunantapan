@@ -4,7 +4,13 @@ import { Niivue } from '@niivue/niivue';
   
 export default function BrainViewer() {  
   const canvasRef = useRef<HTMLCanvasElement>(null);  
+  const containerRef = useRef<HTMLDivElement>(null);  
   const nvRef = useRef<any>(null);  
+    
+  // Add refs for slice info divs  
+  const axialSliceInfoRef = useRef<HTMLDivElement>(null);  
+  const coronalSliceInfoRef = useRef<HTMLDivElement>(null);  
+  const sagittalSliceInfoRef = useRef<HTMLDivElement>(null);  
     
   // State for all interactive elements  
   const [opacity, setOpacity] = useState({ background: 255, overlay: 128 });  
@@ -16,6 +22,11 @@ export default function BrainViewer() {
     drawMode: 0 // 0 = undo, 1 = append, 2 = remove  
   });  
   const [location, setLocation] = useState("Drag and Drop any NIfTI image");  
+  const [sliceInfo, setSliceInfo] = useState({  
+    axial: { current: 0, total: 0 },  
+    coronal: { current: 0, total: 0 },  
+    sagittal: { current: 0, total: 0 }  
+  });  
   
   // Initialize Niivue  
   useEffect(() => {  
@@ -24,6 +35,30 @@ export default function BrainViewer() {
     // Define a function to handle location changes  
     const handleLocationChange = (data: any) => {  
       setLocation(data.string);  
+        
+      // Update slice information if volumes are loaded  
+      if (nvRef.current && nvRef.current.volumes.length > 0) {  
+        const nv = nvRef.current;  
+        const volume = nv.volumes[0];  
+          
+        // Get dimensions from the volume header  
+        const dims = volume.hdr.dims.slice(1, 4); // [x, y, z] dimensions  
+          
+        // Get crosshair position (0-1 range for each dimension)  
+        const crosshair = nv.scene.crosshairPos.slice();  
+          
+        // Calculate current slice for each orientation (convert from 0-1 range to actual slice number)  
+        const axialSlice = Math.round(crosshair[2] * (dims[2] - 1)) + 1;  
+        const coronalSlice = Math.round(crosshair[1] * (dims[1] - 1)) + 1;  
+        const sagittalSlice = Math.round(crosshair[0] * (dims[0] - 1)) + 1;  
+          
+        // Update slice info state  
+        setSliceInfo({  
+          axial: { current: axialSlice, total: dims[2] },  
+          coronal: { current: coronalSlice, total: dims[1] },  
+          sagittal: { current: sagittalSlice, total: dims[0] }  
+        });  
+      }  
     };  
   
     // 1. Create NiiVue instance with proper defaults  
@@ -31,8 +66,8 @@ export default function BrainViewer() {
       backColor: [0, 0, 0, 1], // Solid black background  
       show3Dcrosshair: true,  
       crosshairColor: [1, 1, 0, 1],  
-      onLocationChange: handleLocationChange,  
-      // Important: Disable linked zoom behavior  
+      onLocationChange: handleLocationChange, // Important: Register the location change handler  
+      // Disable linked zoom behavior  
       yoke3Dto2DZoom: false,  
       // Disable scroll wheel zoom completely  
       scrollWheelZoom: false  
@@ -49,11 +84,10 @@ export default function BrainViewer() {
             
           // Set drag mode to measurement instead of pan to avoid zoom behavior  
           nv.opts.dragMode = nv.dragModes.measurement;  
-            
           nv.opts.multiplanarForceRender = true;  
           nv.opts.crosshairGap = 11;  
           nv.setInterpolation(true);  
-  
+            
           // Set a fixed 2x2 quad-view layout  
           nv.setCustomLayout([  
             // Top left - Sagittal  
@@ -65,10 +99,10 @@ export default function BrainViewer() {
             // Bottom right - 3D Render  
             {sliceType: nv.sliceTypeRender, position: [0.5, 0.5, 0.5, 0.5]},  
           ]);  
-  
+            
           // 3. Store the reference for later use  
           nvRef.current = nv;  
-  
+            
           // 4. Load default volumes with proper paths  
           nv.loadVolumes([  
             { url: "/default/brain.nii" },  
@@ -82,7 +116,6 @@ export default function BrainViewer() {
               
             // Add our custom wheel handler AFTER volumes are loaded  
             addCustomWheelHandler(nv);  
-              
           }).catch(err => {  
             console.error("Error loading volumes:", err);  
           });  
@@ -147,6 +180,10 @@ export default function BrainViewer() {
             // Update crosshair position  
             nv.scene.crosshairPos = crosshair;  
             nv.drawScene();  
+              
+            // IMPORTANT: Call createOnLocationChange to trigger the location change event  
+            // This will update the slice overlays when scrolling in any view  
+            nv.createOnLocationChange();  
           }  
         }  
       }, { passive: false });  
@@ -155,6 +192,7 @@ export default function BrainViewer() {
     // Proper cleanup function  
     return () => {  
       clearTimeout(initTimer);  
+        
       if (nvRef.current) {  
         const nv = nvRef.current;  
           
@@ -194,14 +232,55 @@ export default function BrainViewer() {
   }, []);  
   
   return (  
-    <div className="flex flex-col h-full w-full bg-black text-white">  
+    <div className="flex flex-col h-full w-full bg-black text-white" ref={containerRef}>  
       <main className="flex-1 bg-black relative">  
+        {/* Canvas element for NiiVue */}  
         <canvas   
-          ref={canvasRef}  
-          id="gl1"  
-          className="absolute inset-0 w-full h-full bg-black"  
-          style={{ minHeight: "400px" }} // Ensures minimum height for the canvas  
+          ref={canvasRef}   
+          id="gl1"   
+          className="absolute inset-0 w-full h-full bg-black"   
+          style={{ minHeight: "400px" }}   
         ></canvas>  
+          
+        {/* Slice Information Overlays */}  
+        <div  
+  ref={axialSliceInfoRef}  
+  className="absolute text-white text-sm px-2 py-1 pointer-events-none"  
+  style={{   
+    left: '10px',   
+    bottom: '10px',   
+    zIndex: 10,  
+    textShadow: '1px 1px 2px black' // Add text shadow to ensure visibility  
+  }}  
+>  
+  Slice: {sliceInfo.axial.current}/{sliceInfo.axial.total}  
+</div>  
+  
+<div  
+  ref={coronalSliceInfoRef}  
+  className="absolute text-white text-sm px-2 py-1 pointer-events-none"  
+  style={{   
+    left: '60%',   
+    bottom: '60%',   
+    zIndex: 10,  
+    textShadow: '1px 1px 2px black' // Add text shadow to ensure visibility  
+  }}  
+>  
+  Slice: {sliceInfo.coronal.current}/{sliceInfo.coronal.total}  
+</div>  
+  
+<div  
+  ref={sagittalSliceInfoRef}  
+  className="absolute text-white text-sm px-2 py-1 pointer-events-none"  
+  style={{   
+    left: '10px',   
+    bottom: '60%',   
+    zIndex: 10,  
+    textShadow: '1px 1px 2px black' // Add text shadow to ensure visibility  
+  }}  
+>  
+  Slice: {sliceInfo.sagittal.current}/{sliceInfo.sagittal.total}  
+</div>
       </main>  
     </div>  
   );  
