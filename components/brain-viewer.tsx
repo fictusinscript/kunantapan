@@ -30,6 +30,7 @@ export default function BrainViewer() {
     const defaults = {  
       backColor: [0.4, 0.4, 0.4, 1],  
       show3Dcrosshair: true,  
+      crosshairColor: [1, 1, 0, 1], // Add this line to set yellow crosshairs  
       onLocationChange: handleLocationChange  
     };  
   
@@ -212,7 +213,7 @@ export default function BrainViewer() {
   
   return (  
     <div className="flex flex-col h-full w-full bg-[#303030] text-white">  
-      <header className="p-4">  
+      {/* <header className="p-4">  
         <div className="flex flex-wrap gap-4 items-center">  
           <div className="flex items-center gap-2">  
             <label htmlFor="clipCheck">Clip Plane</label>  
@@ -257,21 +258,11 @@ export default function BrainViewer() {
             Save Scene  
           </button>  
         </div>  
-      </header>  
+      </header>   */}
       <main className="flex-1 bg-black relative">  
         <canvas ref={canvasRef} id="gl1" className="absolute inset-0 w-full h-full"></canvas>  
       </main>  
-      <footer className="p-4">  
-        <div className="w-full">  
-          <table className="w-full">  
-            <tbody>  
-              <tr>  
-                <th id="location">{parsedLocation}</th>  
-              </tr>  
-            </tbody>  
-          </table>  
-        </div>  
-      </footer>  
+      
     </div>  
   );  
 }
